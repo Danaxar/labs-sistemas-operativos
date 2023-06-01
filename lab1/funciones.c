@@ -11,7 +11,7 @@ int getCantidadLineas(char* nombreArchivo){
 // Salida: Matriz de cadena de caracteres del contenido del archivo
 // Lee un archivo de principio a fin
 char** leerPrueba(char* nombreArchivo, int* cantidadLineas){
-    int lenLinea = 59;
+    int lenLinea = 60;
 
     FILE* archivo = fopen(nombreArchivo, "r");
     if(archivo == NULL){
@@ -20,7 +20,7 @@ char** leerPrueba(char* nombreArchivo, int* cantidadLineas){
     }
 
     *cantidadLineas = getCantidadLineas(nombreArchivo);
-    printf("Leyendo: %s    Lineas: %d\n", nombreArchivo, *cantidadLineas);
+    // printf("Leyendo: %s    Lineas: %d\n", nombreArchivo, *cantidadLineas);
 
     // Leer
     char** salida = (char**) malloc(sizeof(char*) * *cantidadLineas);
@@ -33,6 +33,7 @@ char** leerPrueba(char* nombreArchivo, int* cantidadLineas){
     return salida;
 }
 
+// --------------------- ESTADOS ------------------------ //
 void estado1(int* estadoActual, char* expresion, int indiceActual){
     if(indiceActual == 59){
         return;
@@ -76,3 +77,4 @@ void estado4(int* estadoActual, char* expresion, int indiceActual){
     *estadoActual = 4;
     estado4(estadoActual, expresion, indiceActual + 1);
 }
+// -----------------------------------------------------------------

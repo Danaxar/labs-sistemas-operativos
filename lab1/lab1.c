@@ -14,8 +14,8 @@ Entradas:
 Salidas: Entero
 */
 int main(int argc, char *argv[]){
-    printf("Iniciando...\n");
-    printf("Cantidad de argumentos: %d", argc);
+    // printf("Iniciando...\n");
+    // printf("Cantidad de argumentos: %d\n", argc);
 
     // Verificar cantidad de argumentos
     if(!(argc == 6 || argc == 5)){
@@ -48,25 +48,44 @@ int main(int argc, char *argv[]){
             break;
         }
     }
-    printf("Entradas del sistema:\n");
-    printf("\ti: %s\n\to: %s\n", i, o);
-    printf("\tb: %d\n", b);
+    // printf("Entradas del sistema:\n");
+    // printf("\ti: %s\n\to: %s\n", i, o);
+    // printf("\tb: %d\n", b);
     // En este punto ya se tienen las entradas listas
 
     // Procesamiento
     int cantidadLineas;
     char** contenido = leerPrueba(i, &cantidadLineas);
+    int cantRegulares = 0;
+    int cantNoRegulares = 0;
     for(int i = 0; i < cantidadLineas; i++){
-        printf("Linea (%d): %s\n", i+1, contenido[i]);
+        // printf("Linea (%d): %s\n", i+1, contenido[i]);
+        if(b){
+            printf("%s  ", contenido[i]);
+        }
+        
         int estado = 1;
         estado1(&estado, contenido[i], 0);
-        printf("Estado resultante: %d -> ", estado);
+        // printf("Estado resultante: %d -> ", estado);
         if(estado == 4){
-            printf("SI");
+            if(b){
+                printf("si\n");
+            }
+            
+            cantRegulares++;
         }else{
-            printf("NO");
+            if(b){
+                printf("no\n");
+            }
+            cantNoRegulares++;
         }
-        printf("\n\n\n");
+    }
+    printf("\n\n");
+
+    if(b){
+        printf("Total de expresiones que Si son regulares: %d\n", cantRegulares);
+        printf("Total de expresiones que No son regulares: %d\n", cantNoRegulares);
+        printf("Total de lineas leídas: %d\n", cantidadLineas);
     }
 
     // Salida
@@ -76,6 +95,6 @@ int main(int argc, char *argv[]){
         free(contenido[i]);
     }
     free(contenido);
-    printf("Finalizando...\n");
+    // printf("Finalizando...\n");
     return 0;
 }
