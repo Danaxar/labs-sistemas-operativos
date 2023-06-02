@@ -45,6 +45,7 @@ void estado1(int* estadoActual, char* expresion, int indiceActual){
         estado2(estadoActual, expresion, indiceActual + 1);
     }
 }
+
 void estado2(int* estadoActual, char* expresion, int indiceActual){
     if(indiceActual == 59){
         return;
@@ -56,6 +57,7 @@ void estado2(int* estadoActual, char* expresion, int indiceActual){
         estado3(estadoActual, expresion, indiceActual + 1);
     }
 }
+
 void estado3(int* estadoActual, char* expresion, int indiceActual){
     if(indiceActual == 59){
         return;
