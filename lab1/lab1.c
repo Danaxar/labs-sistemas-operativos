@@ -1,3 +1,6 @@
+// Daniel Catalán 20.675.871-6
+// Felipe Carrasco 20.285.756-6
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
@@ -7,12 +10,9 @@
 #define true 1
 #define boolean int
 
-/*
-Entradas:
-    - argc: Cantidad de argumentos + 1 (considera el nombre del ejecutable)
-    - argv: Lista de argumentos
-Salidas: Entero
-*/
+// Entradas: argc y argv
+// Salidas: int
+// Descripción: Analiza un archivo de entrada y escribe otro con los resultados de las expresiones regulares
 int main(int argc, char *argv[]){
     // Tienen que ser 5 o 6 argumentos
     if(!(argc == 6 || argc == 5)){
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]){
     // Crear stream para archivo de salida
     FILE* salida = fopen(o, "w");
 
-    // Procesamiento
+    // Solución
     int cantidadLineas;
     char** contenido = leerPrueba(i, &cantidadLineas);  // Leer archivo de entrada
     int cantRegulares = 0;
@@ -60,17 +60,17 @@ int main(int argc, char *argv[]){
 
         // Verificar si cumple
         if(estado == 4){
-            fprintf(salida, "si\n");
+            fprintf(salida, " si\n");
             cantRegulares++;
             b ? printf("si\n") : 0;
         }else{
-            fprintf(salida, "no\n");
+            fprintf(salida, " no\n");
             cantNoRegulares++;
             b ? printf("no\n") : 0;
         }
     }
 
-    // Salida
+    // Salidas
     printf("\n\n");
     if(b){
         printf("Total de expresiones que Si son regulares: %d\n", cantRegulares);
