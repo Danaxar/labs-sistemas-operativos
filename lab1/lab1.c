@@ -24,17 +24,17 @@ int main(int argc, char *argv[]){
     int b = 0;
     while((option = getopt(argc, argv, "i:o:b")) != -1){
         switch (option){
-        case 'i':
-            i = (char*) malloc(strlen(optarg) + 1);
-            strcpy(i, optarg);
-            break;
-        case 'o':
-            o = (char*) malloc(strlen(optarg) + 1);
-            strcpy(o, optarg);
-            break;
-        case 'b':
-            b = 1;
-            break;
+            case 'i':
+                i = (char*) malloc(strlen(optarg) + 1);
+                strcpy(i, optarg);
+                break;
+            case 'o':
+                o = (char*) malloc(strlen(optarg) + 1);
+                strcpy(o, optarg);
+                break;
+            case 'b':
+                b = 1;
+                break;
         }
     }
 
