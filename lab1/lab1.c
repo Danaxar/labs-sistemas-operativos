@@ -6,9 +6,6 @@
 #include <getopt.h>
 #include <string.h>
 #include "funciones.h"
-#define false 0
-#define true 1
-#define boolean int
 
 // Entradas: argc y argv
 // Salidas: int
@@ -24,7 +21,7 @@ int main(int argc, char *argv[]){
     int option;
     char* i = NULL;
     char* o = NULL;
-    boolean b = false;
+    int b = 0;
     while((option = getopt(argc, argv, "i:o:b")) != -1){
         switch (option){
         case 'i':
@@ -36,7 +33,7 @@ int main(int argc, char *argv[]){
             strcpy(o, optarg);
             break;
         case 'b':
-            b = true;
+            b = 1;
             break;
         }
     }
