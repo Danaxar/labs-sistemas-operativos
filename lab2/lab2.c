@@ -12,9 +12,10 @@
 // Salidas: int
 // Descripción: Analiza un archivo de entrada y escribe otro con los resultados de las expresiones regulares
 int main(int argc, char *argv[]){
+    printf("[Lab2] Iniciando lab2...\n");
     // Tienen que ser 5 o 6 argumentos
     if(!(argc == 10 || argc == 9)){
-        printf("Argumentos invalidos.\n");
+        printf("[Lab2] Argumentos invalidos.\n");
         exit(0);
     }
 
@@ -50,30 +51,31 @@ int main(int argc, char *argv[]){
     }
 
 
-    printf("i: %s\n", i);
-    printf("o: %s\n", o);
-    printf("c: %d\n", c);
-    printf("n: %d\n", n);
-    printf("b: %d\n", b);
+    // printf("[Lab2] \ti: %s\n", i);
+    // printf("[Lab2] \to: %s\n", o);
+    // printf("[Lab2] \tc: %d\n", c);
+    // printf("[Lab2] \tn: %d\n", n);
+    // printf("[Lab2] \tb: %d\n", b);
+    b ? printf("\r") : 0;
 
-    // Ejecutar proceso broker con fork y exec
-    int pid = fork();
+    // Crear Broker
+    pid_t pid = fork();
     if(pid == 0){  // Hijo -> Ejecutar broker
         // Convertir c y n a cadena de caracteres
         char c_str[10];
         char n_str[10];
         sprintf(c_str, "%d", c);
         sprintf(n_str, "%d", n);
-
-        // Reemplazar copia por broker
         char* argumentos[] = {"./broker", "-c", c_str, "-n", n_str, NULL};
-        execv(argumentos[0], argumentos);
 
+        // Ejecutar broker
+        execv(argumentos[0], argumentos);
         // El broker creará ${n} workers
         // El broker ejecutará los procesos worker utilizando algún miembro de la familia exec()
         // Y se comunicará con ellos mediante el uso de pipes
     }
 
+    printf("[Lab2] Finalizando...\n");
     free(i);
     free(o);
     return 0;
