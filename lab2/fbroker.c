@@ -4,7 +4,9 @@
 #include <getopt.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <string.h>
 
+#define BUFF_SIZE 255
 
 // Cantidad de lineas a leer: c * n
 
@@ -43,15 +45,22 @@ int main(int argc, char *argv[]) {
     }
 
     // Adjudicar memoria para los pipes
-    int** fd = (int**) malloc(sizeof(int* ) * n);
+    // Hijo -> Padre (Hijo escribe padre lee)
+    int** fd_parent_child = (int**) malloc(sizeof(int* ) * n);
     for(int i = 0; i < n; i++){
-        fd[i] = (int*) malloc(sizeof(int) * 2);
+        fd_parent_child[i] = (int*) malloc(sizeof(int) * 2);
+    }
+
+    // Padre -> Hijo (Padre escribe hijo lee)
+    int** fd_child_parent = (int**) malloc(sizeof(int* ) * n);
+    for(int i = 0; i < n; i++){
+        fd_child_parent[i] = (int*) malloc(sizeof(int) * 2);
     }
 
     // Crear workers
     for(int i = 0; i < n; i++){
         // Crear pipe
-        if(pipe(fd[i]) == -1){
+        if(pipe(fd_parent_child[i]) == -1 || pipe(fd_child_parent[i]) == -1){
             printf("[Broker] Error al crear el pipe\n");
             return 1;
         }
@@ -63,35 +72,56 @@ int main(int argc, char *argv[]) {
             return 1;
         }
 
-        // Utilizar execv en el proceso hijo
         if (pid == 0){
-            // Redirigir la salida estandar del proceso hijo hacia el padre
-            dup2(STDOUT_FILENO, fd[i][1]);
-            //! Ejecutar ./worker
-            char* args[] = {"./worker", NULL};
+            // Id del worker
+            char idWorker[32]; 
+            sprintf(idWorker, "%d", i);
+
+            // FD para lectura
+            char fd_read[BUFF_SIZE];
+            sprintf(fd_read, "%d", fd_parent_child[i][0]);
+
+            // Canal de escritura del hijo
+            char fd_write[BUFF_SIZE];
+            sprintf(fd_write, "%d", fd_child_parent[i][1]);
+
+            char* args[] = {"./worker", idWorker,fd_read, fd_write, NULL};
+
+            // Ejecutar worker (Se sale del ciclo)
             execv(args[0], args);
 
+            // Si esta parte se ejecuta entonces execv salió mal
             printf("Error creando el worker\n");
             return 1;
         }
     }
+    printf("[Broker] Workers creados.\n");
+
+    // Enviar un mensaje al primer hijo
+    write(fd_parent_child[0][1], "Padre->Hijo", 12);
+
+    // Leer un mensaje del primer hijo
+    char mensajeHijo[1000];
+    if(read(fd_child_parent[0][0], mensajeHijo, BUFF_SIZE) == -1){
+        printf("[Broker] Error al leer el mensaje del hijo\n");
+    }else{
+        printf("[Broker] Mensaje recibido por hijo: %s\n", mensajeHijo);
+    }
+
+    
+
+
+    
 
     // Esperar a que los procesos hijos terminen
     for (int i = 0; i < n; i++) {
         wait(NULL);
     }
 
-    
-
-    // // Leer salidas de los hijos desde los pipes
+    // Cerrar los pipes
     // for(int i = 0; i < n; i++){
-    //     int bytes_leidos = read(pipes[i][0], bd[i], sizeof(bd[i]));
-    //     if(bytes_leidos > 0){
-    //         printf("[Broker] [Hijo %d] %s", i, bd[i]);
-    //     }
-
-    //     // Cerrar la lectura
-    //     close(pipes[i][0]);
+    //     close(fd_parent_child[i][0]);
+    //     close(fd_parent_child[i][1]);
     // }
 
     printf("[Broker] Finalizando broker... \n");
