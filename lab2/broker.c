@@ -7,9 +7,9 @@
 #include <string.h>
 
 #define BUFF_SIZE 255
-#define print(...) printf("[Broker] "); printf(__VA_ARGS__); printf("\n")
+#define print(...) printf("\033[0;36m[Broker] "); printf(__VA_ARGS__); printf("\033[0m\n")
 #define MAX_CHAR 60
-#define tab printf("\n");
+#define tab printf("\t");
 
 // Funciones
 void mandarMensaje(int fdHijo, char* contenido){
@@ -171,40 +171,6 @@ int main(int argc, char *argv[]) {
         line += c;
     }
 
-    // // int contadorLineasLeidas = 0;
-    // // Escribir archivo de salida
-    // FILE* salida = fopen(o, "w");
-    // line = 0;
-    // // Recorrer workers
-    // for(int w = 0; w < n; w++){
-    //     print("Leyendo al worker %d", w);
-    //     char mensaje[1000];
-    //     print("XD1");
-    //     // leerMensaje(fd_child_parent[w][0], mensaje);
-    //     print("Fd: %d", fd_child_parent[w][0]);
-    //     read(fd_child_parent[w][0], mensaje, 1000);
-    //     print("XD2");
-    //     tab print("Linea: %s", mensaje);
-        
-
-    //     // Recorrer resultados del worker
-    //     for(int result = 0; result < strlen(mensaje); result++){
-    //         // Imprimir linea
-    //         fprintf(salida, "%s ", archivo[line + result]);  
-
-    //         // Imprimir resultado
-    //         fprintf(
-    //             salida,
-    //             "%s\n",
-    //             // strcmp(mensaje[result], "1") == 0 
-    //             mensaje[result] == '1'
-    //                 ? "si\n"
-    //                 : "no\n"
-    //         );
-    //     }
-    //     line += c;
-    // }
-    // fclose(salida);
 
 
     // Mandar mensajes quit
@@ -213,6 +179,48 @@ int main(int argc, char *argv[]) {
         mandarMensaje(fd_parent_child[i][1], "quit");
     }
 
+    // int contadorLineasLeidas = 0;
+    // Escribir archivo de salida
+    FILE* salida = fopen(o, "w");
+    line = 0;
+    int si = 0, no = 0;
+    // Recorrer workers
+    for(int w = 0; w < n; w++){
+        print("Leyendo al worker %d", w);
+        char mensaje[BUFF_SIZE];
+        // leerMensaje(fd_child_parent[w][0], mensaje);
+        read(fd_child_parent[w][0], mensaje, BUFF_SIZE);
+        printf("Linea: %s\n", mensaje);
+        
+
+        // Recorrer resultados del worker
+        for(int result = 0; result < strlen(mensaje); result++){
+            // Imprimir linea
+            fprintf(salida, "%s ", archivo[line + result]);  
+            
+            // Contadores
+            mensaje[result] == '1' ? si++ : no++;
+            
+            // Imprimir resultado
+            fprintf(
+                salida,
+                "%s",
+                mensaje[result] == '1' ? "si\n" : "no\n"
+            );
+        }
+        line += c;
+    }
+    // Lineas leidas
+    print("\n\nTotal de expresiones que Si son regulares: %d", si);
+    print("Total de expresiones que No son regulares: %d", no);
+    print("Total de lineas leidas: %d", line);
+
+    fprintf(salida,"\n\nTotal de expresiones que Si son regulares: %d\n", si);
+    fprintf(salida,"Total de expresiones que No son regulares: %d\n", no);
+    fprintf(salida,"Total de lineas leidas: %d\n", line);
+
+
+    fclose(salida);
     // Esperar a que los procesos hijos terminen
     print("Esperando a que los workers terminen...");
     for (int i = 0; i < n; i++) {

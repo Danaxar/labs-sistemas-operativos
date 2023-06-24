@@ -5,7 +5,7 @@
 #include "fworker.h"
 
 #define BUFF_SIZE 255
-#define print(...) printf("[Worker %s] ", id); printf(__VA_ARGS__); printf("\n");
+#define print(...) printf("[Worker %s] ", id); printf(__VA_ARGS__); printf("\033[0m\n");
 
 // Variables globales
 const char* id;
@@ -77,12 +77,14 @@ int main(int argc, char const *argv[])
 
             //! Cada worker tiene una capacidad máxima de 255 bytes se info
             enviarMensaje(salida);
+            // enviarMensaje("1111111111");
             break;
         }else{
             // Procesar mensaje (se asume que no hay errores)
             int resultado;
             estado1(&resultado, entrada, 0);
             // printf("[Worker %s] Linea recibida: %s -> %d\n",id, entrada, resultado);
+            printf("\r");
             lineasLeidas++;
 
             int decision = resultado == 4 ? 1 : 0;

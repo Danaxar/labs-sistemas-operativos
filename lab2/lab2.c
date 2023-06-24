@@ -6,12 +6,12 @@
 #include <getopt.h>
 #include <string.h>
 #include <unistd.h>
-#include "funciones.h"
 
 // Entradas: argc y argv
 // Salidas: int
 // Descripción: Analiza un archivo de entrada y escribe otro con los resultados de las expresiones regulares
 int main(int argc, char *argv[]){
+    system("clear");
     printf("[Lab2] Iniciando lab2...\n");
     // Tienen que ser 5 o 6 argumentos
     if(!(argc == 10 || argc == 9)){
