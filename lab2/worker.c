@@ -49,7 +49,7 @@ char* intArrayToString(int* array, int length) {
         sprintf(&result[i], "%d", array[i]);
         i++;
     }
-    print("Cadena resultante: %s\n", result);
+    // print("Cadena resultante: %s\n", result);
     return result;
 }
 

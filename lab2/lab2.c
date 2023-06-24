@@ -13,10 +13,10 @@
 int main(int argc, char *argv[]){
     system("clear");
     printf("[Lab2] Iniciando lab2...\n");
-    // Tienen que ser 5 o 6 argumentos
+    // Tienen que ser 5 o 6 argumentos (-b)
     if(!(argc == 10 || argc == 9)){
-        printf("[Lab2] Argumentos invalidos.\n");
-        exit(0);
+        printf("[Lab2] Argumentos insuficientes.\n");
+        exit(1);
     }
 
     // Getopt
@@ -50,6 +50,11 @@ int main(int argc, char *argv[]){
         }
     }
 
+    if(c <= 0 || n <= 0){
+        printf("Valores de chunk y workers invalidos.\n");
+        exit(1);
+    }
+
 
     // printf("[Lab2] \ti: %s\n", i);
     // printf("[Lab2] \to: %s\n", o);
@@ -60,19 +65,30 @@ int main(int argc, char *argv[]){
 
     // Crear Broker
     int pid = fork();
-    if(pid == 0){  // Hijo -> Ejecutar broker
-        // Convertir c y n a cadena de caracteres
+    if(pid == 0){
+        // Convertir a char* el chunk
         char c_str[10];
-        char n_str[10];
         sprintf(c_str, "%d", c);
+
+        // Convertir a char* la cantidad de workers
+        char n_str[10];
         sprintf(n_str, "%d", n);
-        char* argumentos[] = {"./broker", "-c", c_str, "-n", n_str, NULL};
+
+        // Crear lista de argumentos
+        char* argumentos[] = {
+            "./broker",
+            i,
+            o, 
+            c_str, 
+            n_str, 
+            b ? "1" : "0",
+            NULL};
 
         // Ejecutar broker
         execv(argumentos[0], argumentos);
-        // El broker creará ${n} workers
-        // El broker ejecutará los procesos worker utilizando algún miembro de la familia exec()
-        // Y se comunicará con ellos mediante el uso de pipes
+
+        printf("No se ha podido ejecutar el worker\n");
+        exit(1);
     }
 
     printf("[Lab2] Finalizando...\n");

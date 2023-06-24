@@ -11,15 +11,15 @@
 #define MAX_CHAR 60
 #define tab printf("\t");
 
+int b;
+
 // Funciones
 void mandarMensaje(int fdHijo, char* contenido){
     write(fdHijo, contenido, BUFF_SIZE);
 }
 
 void leerMensaje(int fdHijo, char* buff){
-    if(read(fdHijo, buff, BUFF_SIZE) == -1){
-        print("Error al leer el mensaje del hijo");
-    }
+    read(fdHijo, buff, BUFF_SIZE);
 }
 
 // Entradas: char* (nombre del archivo)
@@ -35,7 +35,6 @@ int getCantidadLineas(char* nombreArchivo){
 // Salida: char** (Matriz de cadena de caracteres del contenido del archivo)
 // Descripción: Lee un archivo de principio a fin
 char** leerArchivo(char* nombreArchivo, int* cantidadLineas){
-    print("Nombre del archivo: %s", nombreArchivo);
     // En el enunciado se muestran 60 caracteres de prueba
     int lenLinea = MAX_CHAR;
 
@@ -60,66 +59,37 @@ char** leerArchivo(char* nombreArchivo, int* cantidadLineas){
 
 // Cantidad de lineas a leer: c * n
 int main(int argc, char *argv[]) {
-    print("Iniciando broker...");
-    int c = 0; // Tamaño del chunk
-    int n = 0; // Cantidad de workers
-    char* archivo_entrada = "prueba_100.txt";
-    char* o = "salida.txt";
+    char* nombreArchivoEntrada = argv[1];
+    char* nombreArchivoSalida = argv[2];
+    int c = atoi(argv[3]); // Tamaño del chunk
+    int n = atoi(argv[4]); // Cantidad de workers
+    b = strcmp(argv[5], "1") == 0 ? 1 : 0;
 
-    int option;
-    while ((option = getopt(argc, argv, "c:n:")) != -1) {
-        switch (option) {
-            case 'c':
-                c = atoi(optarg);
-                break;
-            case 'n':
-                n = atoi(optarg);
-                break;
-        }
-    }
-
-    if (c == 0 || n == 0) {
-        print("Debe escoger un numero distinto de cero.");
-        return 1;
-    }
-
-    print("Tamaño del chunk: %d", c);
-    print("Cantidad de workers: %d", n);
-    
-
-    // Resultados workers
-
-    // Leer archivo
+    // Leer archivo de entrada
     int cantidadLineas;
-    char** archivo = leerArchivo(archivo_entrada, &cantidadLineas);
-    // Mostrar por pantalla el archivo leido
-    // for(int i = 0; i < cantidadLineas; i++) {print("%s", archivo[i]);}
-
+    char** archivo = leerArchivo(nombreArchivoEntrada, &cantidadLineas);
 
     // Adjudicar memoria para los pipes
-    // Hijo -> Padre (Hijo escribe padre lee)
-    int** fd_parent_child = (int**) malloc(sizeof(int* ) * n);
-    for(int i = 0; i < n; i++) {fd_parent_child[i] = (int*) malloc(sizeof(int) * 2);}
-
-    // Padre -> Hijo (Padre escribe hijo lee)
-    int** fd_child_parent = (int**) malloc(sizeof(int* ) * n);
-    for(int i = 0; i < n; i++) {fd_child_parent[i] = (int*) malloc(sizeof(int) * 2);}
-
+    int** fd_parent_child = (int**) malloc(sizeof(int* ) * n); // Hijo escribe padre lee
+    int** fd_child_parent = (int**) malloc(sizeof(int* ) * n); // Padre escribe hijo lee
+    for(int i = 0; i < n; i++) {
+        fd_parent_child[i] = (int*) malloc(sizeof(int) * 2);
+        fd_child_parent[i] = (int*) malloc(sizeof(int) * 2);
+    }
 
     // Crear workers
-    print("Creando workers...");
     for(int i = 0; i < n; i++){
         // Crear pipe
         if(pipe(fd_parent_child[i]) == -1 || pipe(fd_child_parent[i]) == -1){
             print("Error al crear el pipe");
-            return 1;
+            exit(1);
         }
 
         // Crear un proceso hijo
         int pid = fork();
         if(pid == -1){
             print("Error al crear un nuevo proceso");
-            return 1;
+            exit(1);
         }
 
         if (pid == 0){
@@ -135,35 +105,28 @@ int main(int argc, char *argv[]) {
             char fd_write[BUFF_SIZE];
             sprintf(fd_write, "%d", fd_child_parent[i][1]);
 
+            // Tamaño del chunk
             char chunk_str[BUFF_SIZE];
             sprintf(chunk_str, "%d", c);
 
+            // Argumentos
             char* args[] = {"./worker", idWorker,fd_read, fd_write, chunk_str, NULL};
 
-            // Ejecutar worker (Se sale del ciclo)
+            // Ejecutar worker
             execv(args[0], args);
 
-            // Si esta parte se ejecuta entonces execv salió mal
             print("Error creando el worker");
-            return 1;
+            exit(1);
         }
     }
-    print("Workers creados.");
 
-    // Una vez creados hay que mandar lineas para procesar
-    // Cada worker leerá 1 chunk (X lineas)
-    print("Mandando lineas a workers...");
-    int line = 0;
-    int archivoLeido = 0;
-    // Recorrer workers
-    for(int w = 0; w < n && !archivoLeido; w++){
-        // Recorrer lineas relativas y mandarlas al worker
-        for(int l = 0; l < c; l++){
+    // Mandar lineas de texto
+    int line = 0, archivoLeido = 0;
+    for(int w = 0; w < n && !archivoLeido; w++){ // Recorrer workers
+        for(int l = 0; l < c; l++){ // Recorrer lineas relativas y mandarlas al worker
             if(line + l < cantidadLineas){
-                // print("Mensaje a enviar: %s\n", archivo[line + l]);
                 mandarMensaje(fd_parent_child[w][1],archivo[line + l]);
-            }else{
-                // Se llegó al límite del archivo
+            }else{ // EOF
                 break;
                 archivoLeido = 1;
             }
@@ -171,30 +134,18 @@ int main(int argc, char *argv[]) {
         line += c;
     }
 
-
-
     // Mandar mensajes quit
-    print("Mandando mensajes quit...");
-    for(int i = 0; i < n; i++){
-        mandarMensaje(fd_parent_child[i][1], "quit");
-    }
+    for(int i = 0; i < n; i++) mandarMensaje(fd_parent_child[i][1], "quit");
 
-    // int contadorLineasLeidas = 0;
     // Escribir archivo de salida
-    FILE* salida = fopen(o, "w");
+    FILE* salida = fopen(nombreArchivoSalida, "w");
     line = 0;
     int si = 0, no = 0;
-    // Recorrer workers
-    for(int w = 0; w < n; w++){
-        print("Leyendo al worker %d", w);
+    
+    for(int w = 0; w < n; w++){ // Recorrer workers
         char mensaje[BUFF_SIZE];
-        // leerMensaje(fd_child_parent[w][0], mensaje);
         read(fd_child_parent[w][0], mensaje, BUFF_SIZE);
-        printf("Linea: %s\n", mensaje);
-        
-
-        // Recorrer resultados del worker
-        for(int result = 0; result < strlen(mensaje); result++){
+        for(int result = 0; result < strlen(mensaje); result++){ // Resultados worker
             // Imprimir linea
             fprintf(salida, "%s ", archivo[line + result]);  
             
@@ -211,7 +162,7 @@ int main(int argc, char *argv[]) {
         line += c;
     }
     // Lineas leidas
-    print("\n\nTotal de expresiones que Si son regulares: %d", si);
+    print("Total de expresiones que Si son regulares: %d", si);
     print("Total de expresiones que No son regulares: %d", no);
     print("Total de lineas leidas: %d", line);
 
@@ -222,18 +173,15 @@ int main(int argc, char *argv[]) {
 
     fclose(salida);
     // Esperar a que los procesos hijos terminen
-    print("Esperando a que los workers terminen...");
     for (int i = 0; i < n; i++) {
         wait(NULL);
     }
 
     // Cerrar los pipes
-    print("Cerrando los pipes...");
     for(int i = 0; i < n; i++){
         close(fd_parent_child[i][0]);
         close(fd_parent_child[i][1]);
     }
 
-    print("Finalizando broker... \n");
     return 0;
 }
