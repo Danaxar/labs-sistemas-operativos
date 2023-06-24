@@ -59,7 +59,7 @@ int main(int argc, char *argv[]){
     b ? printf("\r") : 0;
 
     // Crear Broker
-    pid_t pid = fork();
+    int pid = fork();
     if(pid == 0){  // Hijo -> Ejecutar broker
         // Convertir c y n a cadena de caracteres
         char c_str[10];
