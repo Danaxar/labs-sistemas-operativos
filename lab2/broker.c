@@ -119,46 +119,43 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Mandar lineas
+    // Algoritmo
     int line = 0;
+    int si = 0;
+    int no = 0;
+    FILE* salida = fopen(nombreArchivoSalida, "w");
     while(line < cantidadLineas){
         int worker = (line / chunk) % n;
+        fprintf(salida, "%s ", archivo[line]);
+
+        // Mandar linea a procesar
         mandarMensaje(fd_parent_child[worker][1], archivo[line]);
+        
+        // Recibir respuesta
+        char recibir[BUFF_SIZE];
+        leerMensaje(fd_child_parent[worker][0], recibir);
+
+        int respuesta = atoi(recibir);
+        respuesta
+            ? si++
+            : no++;
+
+        fprintf(salida, "%s\n", respuesta ? "si" : "no");        
         line++;
     }
     
 
-    // Mandar mensajes quit
-    for(int i = 0; i < n; i++) mandarMensaje(fd_parent_child[i][1], "FIN");
-
-    // Escribir archivo de salida
-    FILE* salida = fopen(nombreArchivoSalida, "w");
-    line = 0;
-    int si = 0, no = 0;
-    
-    for(int w = 0; w < n; w++){ // Recorrer workers
-        char mensaje[BUFF_SIZE];
-        read(fd_child_parent[w][0], mensaje, BUFF_SIZE);
-        for(int result = 0; result < strlen(mensaje); result++){ // Resultados worker
-            // Imprimir linea
-            fprintf(salida, "%s ", archivo[line + result]);  
-            
-            // Contadores
-            mensaje[result] == '1' ? si++ : no++;
-            
-            // Imprimir resultado
-            fprintf(
-                salida,
-                "%s",
-                mensaje[result] == '1' ? "si\n" : "no\n"
-            );
-        }
-        line += chunk;
+    // Esperar a que los procesos hijos terminen
+    for (int i = 0; i < n; i++) {
+        mandarMensaje(fd_parent_child[i][1], "FIN");
+        wait(NULL);
     }
+
+    
     // Lineas leidas
     print("Total de expresiones que Si son regulares: %d", si);
     print("Total de expresiones que No son regulares: %d", no);
-    print("Total de lineas leidas: %d", line);
+    print("Total de lineas leidas: %d", cantidadLineas);
 
     fprintf(salida,"\n\nTotal de expresiones que Si son regulares: %d\n", si);
     fprintf(salida,"Total de expresiones que No son regulares: %d\n", no);
@@ -166,10 +163,7 @@ int main(int argc, char *argv[]) {
 
 
     fclose(salida);
-    // Esperar a que los procesos hijos terminen
-    for (int i = 0; i < n; i++) {
-        wait(NULL);
-    }
+    
 
     // Cerrar los pipes
     for(int i = 0; i < n; i++){

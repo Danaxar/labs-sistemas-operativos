@@ -50,18 +50,18 @@ int main(int argc, char const *argv[])
     while(1){
         leerMensaje(entrada);
         if(strcmp(entrada, "FIN") == 0){
-            // enviarMensaje(salida);
+            char lineasLeidas_str[BUFF_SIZE];
+            sprintf(lineasLeidas_str, "%d", lineasLeidas);
             break;
         }else{
             int resultado;
             estado1(&resultado, entrada, 0);
-            printf("\r");
+            printf("\r");  //? Si quito este print se cae el programa ._.
             lineasLeidas++;
 
             // Escribir en el pipe
             write(fd_write, resultado == 4 ? "1" : "0",1);
         }
-
     }
 
     return 0;
