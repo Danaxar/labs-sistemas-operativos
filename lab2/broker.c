@@ -10,7 +10,6 @@
 #define print(...) printf("\033[0;36m[Broker] "); printf(__VA_ARGS__); printf("\033[0m\n")
 #define MAX_CHAR 60
 #define tab printf("\t");
-
 int b;
 
 // Funciones
@@ -57,13 +56,13 @@ char** leerArchivo(char* nombreArchivo, int* cantidadLineas){
     return salida;
 }
 
-// Cantidad de lineas a leer: c * n
 int main(int argc, char *argv[]) {
+    // Parametros de entrada
     char* nombreArchivoEntrada = argv[1];
     char* nombreArchivoSalida = argv[2];
-    int c = atoi(argv[3]); // Tamaño del chunk
+    int chunk = atoi(argv[3]);
     int n = atoi(argv[4]); // Cantidad de workers
-    b = strcmp(argv[5], "1") == 0 ? 1 : 0;
+    b = strcmp(argv[5], "1") == 0 ? 1 : 0;  // Flag b
 
     // Leer archivo de entrada
     int cantidadLineas;
@@ -107,7 +106,7 @@ int main(int argc, char *argv[]) {
 
             // Tamaño del chunk
             char chunk_str[BUFF_SIZE];
-            sprintf(chunk_str, "%d", c);
+            sprintf(chunk_str, "%d", chunk);
 
             // Argumentos
             char* args[] = {"./worker", idWorker,fd_read, fd_write, chunk_str, NULL};
@@ -120,22 +119,17 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Mandar lineas de texto
-    int line = 0, archivoLeido = 0;
-    for(int w = 0; w < n && !archivoLeido; w++){ // Recorrer workers
-        for(int l = 0; l < c; l++){ // Recorrer lineas relativas y mandarlas al worker
-            if(line + l < cantidadLineas){
-                mandarMensaje(fd_parent_child[w][1],archivo[line + l]);
-            }else{ // EOF
-                break;
-                archivoLeido = 1;
-            }
-        }
-        line += c;
+    // Mandar lineas
+    int line = 0;
+    while(line < cantidadLineas){
+        int worker = (line / chunk) % n;
+        mandarMensaje(fd_parent_child[worker][1], archivo[line]);
+        line++;
     }
+    
 
     // Mandar mensajes quit
-    for(int i = 0; i < n; i++) mandarMensaje(fd_parent_child[i][1], "quit");
+    for(int i = 0; i < n; i++) mandarMensaje(fd_parent_child[i][1], "FIN");
 
     // Escribir archivo de salida
     FILE* salida = fopen(nombreArchivoSalida, "w");
@@ -159,7 +153,7 @@ int main(int argc, char *argv[]) {
                 mensaje[result] == '1' ? "si\n" : "no\n"
             );
         }
-        line += c;
+        line += chunk;
     }
     // Lineas leidas
     print("Total de expresiones que Si son regulares: %d", si);

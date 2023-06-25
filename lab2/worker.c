@@ -12,22 +12,15 @@ const char* id;
 int fd_read, fd_write;
 
 int leerMensaje(char* buffer){
-    // printf("[Worker %s] Leyendo mensaje de padre...\n", id);
-    if(read(fd_read, buffer, BUFF_SIZE) == -1){
-        printf("[Worker %s] Error al leer el mensaje del padre\n", id);
-        return 0;
-    }
-    // print("Mensaje recibido: %s", buffer);
+    read(fd_read, buffer, BUFF_SIZE);
     return 1;
 }
 
 int enviarMensaje(char* msj){
-    // printf("[Worker %s] Enviando mensaje de padre...\n", id);
     if(write(fd_write, msj, BUFF_SIZE) == -1){
         printf("[Worker %s] Error escribir al padre\n", id);
         return 0;
     }
-    // printf("[Worker %s] Envio existoso\n", id);
     return 1;
 }
 
@@ -49,7 +42,6 @@ char* intArrayToString(int* array, int length) {
         sprintf(&result[i], "%d", array[i]);
         i++;
     }
-    // print("Cadena resultante: %s\n", result);
     return result;
 }
 
@@ -61,29 +53,23 @@ int main(int argc, char const *argv[])
     fd_read = atoi(argv[2]);
     fd_write = atoi(argv[3]);
     int chunk = atoi(argv[4]);
-    // print("Iniciando -> Argumentos: %d, %d", fd_read, fd_write);
 
     char entrada[BUFF_SIZE];
     int* respuestas = (int*) malloc(sizeof(int) * chunk);
     int lineasLeidas = 0;
     while(1){
         leerMensaje(entrada);
-        if(strcmp(entrada, "quit") == 0){
-            // Enviar data
-            // print("Lineas leidas: %d", lineasLeidas);
-
+        if(strcmp(entrada, "FIN") == 0){
             // Convertir lista de enteros en string
             char* salida = intArrayToString(respuestas, chunk);
 
             //! Cada worker tiene una capacidad máxima de 255 bytes se info
             enviarMensaje(salida);
-            // enviarMensaje("1111111111");
             break;
         }else{
             // Procesar mensaje (se asume que no hay errores)
             int resultado;
             estado1(&resultado, entrada, 0);
-            // printf("[Worker %s] Linea recibida: %s -> %d\n",id, entrada, resultado);
             printf("\r");
             lineasLeidas++;
 
