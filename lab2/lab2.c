@@ -11,8 +11,6 @@
 // Salidas: int
 // Descripción: Analiza un archivo de entrada y escribe otro con los resultados de las expresiones regulares
 int main(int argc, char *argv[]){
-    system("clear");
-    printf("[Lab2] Iniciando lab2...\n");
     // Tienen que ser 5 o 6 argumentos (-b)
     if(!(argc == 10 || argc == 9)){
         printf("[Lab2] Argumentos insuficientes.\n");
@@ -55,14 +53,6 @@ int main(int argc, char *argv[]){
         exit(1);
     }
 
-
-    // printf("[Lab2] \ti: %s\n", i);
-    // printf("[Lab2] \to: %s\n", o);
-    // printf("[Lab2] \tc: %d\n", c);
-    // printf("[Lab2] \tn: %d\n", n);
-    // printf("[Lab2] \tb: %d\n", b);
-    b ? printf("\r") : 0;
-
     // Crear Broker
     int pid = fork();
     if(pid == 0){
@@ -91,8 +81,5 @@ int main(int argc, char *argv[]){
         exit(1);
     }
 
-    printf("[Lab2] Finalizando...\n");
-    free(i);
-    free(o);
     return 0;
 }

@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
 
         if (pid == 0){
             // Id del worker
-            char idWorker[32]; 
+            char idWorker[32];
             sprintf(idWorker, "%d", i);
 
             // FD para lectura
@@ -124,9 +124,11 @@ int main(int argc, char *argv[]) {
     int si = 0;
     int no = 0;
     FILE* salida = fopen(nombreArchivoSalida, "w");
+    b ? printf("\n\n") : 0;
     while(line < cantidadLineas){
         int worker = (line / chunk) % n;
         fprintf(salida, "%s ", archivo[line]);
+        b ? printf("%s ", archivo[line]) : 0;
 
         // Mandar linea a procesar
         mandarMensaje(fd_parent_child[worker][1], archivo[line]);
@@ -136,40 +138,43 @@ int main(int argc, char *argv[]) {
         leerMensaje(fd_child_parent[worker][0], recibir);
 
         int respuesta = atoi(recibir);
-        respuesta
-            ? si++
-            : no++;
+        respuesta ? si++: no++;
 
-        fprintf(salida, "%s\n", respuesta ? "si" : "no");        
+        fprintf(salida, "%s\n", respuesta ? "si" : "no");
+        b ? printf("%s\n", respuesta ? "si" : "no") : 0;
         line++;
     }
-    
-
-    // Esperar a que los procesos hijos terminen
-    for (int i = 0; i < n; i++) {
-        mandarMensaje(fd_parent_child[i][1], "FIN");
-        wait(NULL);
-    }
-
-    
-    // Lineas leidas
-    print("Total de expresiones que Si son regulares: %d", si);
-    print("Total de expresiones que No son regulares: %d", no);
-    print("Total de lineas leidas: %d", cantidadLineas);
 
     fprintf(salida,"\n\nTotal de expresiones que Si son regulares: %d\n", si);
     fprintf(salida,"Total de expresiones que No son regulares: %d\n", no);
     fprintf(salida,"Total de lineas leidas: %d\n", line);
-
-
     fclose(salida);
     
+    // Lineas leidas
+    if(b){
+        print("Total de expresiones que Si son regulares: %d", si);
+        print("Total de expresiones que No son regulares: %d", no);
+        print("Total de lineas leidas: %d", cantidadLineas);
+    }
+
+    // Mandar mensajes FIN
+    for (int i = 0; i < n; i++) mandarMensaje(fd_parent_child[i][1], "FIN");
+
+    // Recibir lineas leidas
+    for(int i = 0; i < n; i++){
+        char recibir[BUFF_SIZE];
+        leerMensaje(fd_child_parent[i][0], recibir);
+        b ? printf("[Worker %d] Lineas leidas: %s\n", i, recibir) : 0;
+    }
+
+    // Esperar a que terminen los worker
+    for (int i = 0; i < n; i++) wait(NULL);
 
     // Cerrar los pipes
     for(int i = 0; i < n; i++){
         close(fd_parent_child[i][0]);
         close(fd_parent_child[i][1]);
     }
-
+    b ? printf("Fin\n") : 0;
     return 0;
 }

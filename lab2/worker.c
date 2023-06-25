@@ -24,26 +24,14 @@ int enviarMensaje(char* msj){
     return 1;
 }
 
-
-char* intArrayToString(int* array, int len) {
-    // Crea la cadena de caracteres resultante
-    char* salida = (char*)malloc((len + 1) * sizeof(char));
-    int i;
-    for(i = 0; i < len; i++) sprintf(&salida[i], "%d", array[i]);
-    salida[i] = '\0';
-    printf("toString -> %s\n", salida);
-    return salida;
-}
-
-
 // Se recibe como entrada los descriptores de archivo
 int main(int argc, char const *argv[])
 {
     id = argv[1];
     fd_read = atoi(argv[2]);
     fd_write = atoi(argv[3]);
-    int chunk = atoi(argv[4]);
-    printf("\r%d\r", chunk); //! Borrar
+    // int chunk = atoi(argv[4]);
+    // printf("\r%d\r", chunk); //! Borrar
 
     char entrada[BUFF_SIZE];
     int lineasLeidas = 0;
@@ -52,11 +40,12 @@ int main(int argc, char const *argv[])
         if(strcmp(entrada, "FIN") == 0){
             char lineasLeidas_str[BUFF_SIZE];
             sprintf(lineasLeidas_str, "%d", lineasLeidas);
+            enviarMensaje(lineasLeidas_str);
             break;
         }else{
             int resultado;
             estado1(&resultado, entrada, 0);
-            printf("\r");  //? Si quito este print se cae el programa ._.
+            // printf("\r");
             lineasLeidas++;
 
             // Escribir en el pipe
