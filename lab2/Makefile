@@ -1,6 +1,6 @@
-FLAGS= -Wall -lm
+FLAGS = -Wall -lm
 
-# Se definen los ejecutables a realizar
+# Objetivo por defecto
 all: broker worker lab2
 
 lab2: lab2.c
@@ -9,20 +9,20 @@ lab2: lab2.c
 broker: broker.o fbroker.o
 	gcc $(FLAGS) -o broker broker.o fbroker.o
 
-broker.o:
+broker.o: broker.c
 	gcc $(FLAGS) -c broker.c
 
-fbroker.o:
+fbroker.o: fbroker.c
 	gcc $(FLAGS) -c fbroker.c
 
 worker: worker.o fworker.o
 	gcc $(FLAGS) -o worker worker.o fworker.o
 
-worker.o:
+worker.o: worker.c
 	gcc $(FLAGS) -c worker.c
 
-fworker.o:
+fworker.o: fworker.c
 	gcc $(FLAGS) -c fworker.c
 
 clean:
-	rm -f programa *.o
+	rm -f broker worker lab2 *.o

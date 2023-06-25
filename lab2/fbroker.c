@@ -10,11 +10,16 @@
 #define BUFF_SIZE 255
 #define MAX_CHAR 60
 
-// Funciones
+// Entradas: Descriptor de archivo del pipe de un worker y el contenido a mandar
+// Salidas: void
+// Descripción: Manda un mensaje a un worker
 void mandarMensaje(int fdHijo, char* contenido){
     write(fdHijo, contenido, BUFF_SIZE);
 }
 
+// Entradas: Descriptor de archivo del pipe de un worker y la dirección de memoria donde se guarda
+// Salidas: void
+// Descripción: Lee un mensaje de un worker
 void leerMensaje(int fdHijo, char* buff){
     read(fdHijo, buff, BUFF_SIZE);
 }

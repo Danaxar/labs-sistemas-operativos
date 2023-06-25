@@ -9,7 +9,7 @@
 
 // Entradas: argc y argv
 // Salidas: int
-// Descripción: Analiza un archivo de entrada y escribe otro con los resultados de las expresiones regulares
+// Descripción: Valida parametros de entrada e invoca a broker con execv
 int main(int argc, char *argv[]){
     // Tienen que ser 5 o 6 argumentos (-b)
     if(!(argc == 10 || argc == 9)){

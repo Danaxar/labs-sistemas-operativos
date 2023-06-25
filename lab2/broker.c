@@ -50,6 +50,10 @@ int main(int argc, char *argv[]) {
         }
 
         if (pid == 0){
+            // Reemplazar la entrada y salida estandar por los pipes
+            dup2(fd_parent_child[i][0], STDIN_FILENO);
+            dup2(fd_child_parent[i][1], STDOUT_FILENO);
+
             // Id del worker
             char idWorker[32];
             sprintf(idWorker, "%d", i);
