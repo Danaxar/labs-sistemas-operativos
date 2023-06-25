@@ -25,24 +25,14 @@ int enviarMensaje(char* msj){
 }
 
 
-char* intArrayToString(int* array, int length) {
-    int resultLength = length + 4;  // Suponiendo que cada número ocupa como máximo 12 caracteres
-    
+char* intArrayToString(int* array, int len) {
     // Crea la cadena de caracteres resultante
-    char* result = (char*)malloc((resultLength + 1) * sizeof(char));
-    if (result == NULL) {
-        // Manejo del error de asignación de memoria
-        fprintf(stderr, "Error de asignación de memoria\n");
-        return NULL;
-    }
-    
-    // Convierte los enteros a caracteres y los agrega a la cadena resultante
-    int i = 0;
-    while(i < length){
-        sprintf(&result[i], "%d", array[i]);
-        i++;
-    }
-    return result;
+    char* salida = (char*)malloc((len + 1) * sizeof(char));
+    int i;
+    for(i = 0; i < len; i++) sprintf(&salida[i], "%d", array[i]);
+    salida[i] = '\0';
+    printf("toString -> %s\n", salida);
+    return salida;
 }
 
 
@@ -53,32 +43,26 @@ int main(int argc, char const *argv[])
     fd_read = atoi(argv[2]);
     fd_write = atoi(argv[3]);
     int chunk = atoi(argv[4]);
+    printf("\r%d\r", chunk); //! Borrar
 
     char entrada[BUFF_SIZE];
-    int* respuestas = (int*) malloc(sizeof(int) * chunk);
     int lineasLeidas = 0;
     while(1){
         leerMensaje(entrada);
         if(strcmp(entrada, "FIN") == 0){
-            // Convertir lista de enteros en string
-            char* salida = intArrayToString(respuestas, chunk);
-
-            //! Cada worker tiene una capacidad máxima de 255 bytes se info
-            enviarMensaje(salida);
+            // enviarMensaje(salida);
             break;
         }else{
-            // Procesar mensaje (se asume que no hay errores)
             int resultado;
             estado1(&resultado, entrada, 0);
             printf("\r");
             lineasLeidas++;
 
-            int decision = resultado == 4 ? 1 : 0;
-            respuestas[lineasLeidas] = decision; // Guardar resultado
+            // Escribir en el pipe
+            write(fd_write, resultado == 4 ? "1" : "0",1);
         }
 
     }
 
-    // print("Finalizando...\n");
     return 0;
 }
