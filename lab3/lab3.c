@@ -8,108 +8,32 @@
 #include <unistd.h>
 #include <pthread.h>
 
+#define print(...) printf(__VA_ARGS__); printf("\n")
 #define MAX_CHAR 60
+
+// Cabeceras
 void estado1(int* estadoActual, char* expresion, int indiceActual);
 void estado2(int* estadoActual, char* expresion, int indiceActual);
 void estado3(int* estadoActual, char* expresion, int indiceActual);
 void estado4(int* estadoActual, char* expresion, int indiceActual);
+int getCantidadLineas(char* nombreArchivo);
+char** leerArchivo(char* nombreArchivo, int* cantidadLineas);
+int threadByLine(int line);
+void* hebra(void* arg);
 
 
-
-
-// Entradas: char* (nombre del archivo)
-// Salidas: int (cantidad de lineas del archivo)
-// Descripción: Obtiene la cantidad de lineas del nombre del archivo después del separador "_"
-// Ej: prueba_10.txt -> 10, prueba_100.txt = 100
-int getCantidadLineas(char* nombreArchivo){
-    char* posicionSeparador = strchr(nombreArchivo, '_') + 1;
-    return atoi(posicionSeparador);
-}
-
-// Entrada: char* (nombre del archivo a leer con extensión), int* (cantidad de lineas)
-// Salida: char** (Matriz de cadena de caracteres del contenido del archivo)
-// Descripción: Lee un archivo de principio a fin
-char** leerArchivo(char* nombreArchivo, int* cantidadLineas){
-    // En el enunciado se muestran 60 caracteres de prueba
-    int lenLinea = MAX_CHAR;
-
-    FILE* archivo = fopen(nombreArchivo, "r");
-    if(archivo == NULL){
-        printf("No se ha podido leer el archivo\n");
-        exit(1);
-    }
-
-    *cantidadLineas = getCantidadLineas(nombreArchivo);
-
-    // Leer
-    char** salida = (char**) malloc(sizeof(char*) * *cantidadLineas);
-    for(int i = 0; i < *cantidadLineas; i++){
-        salida[i] = (char*) malloc(sizeof(char) * lenLinea);
-        fscanf(archivo, "%s", salida[i]);
-    }
-
-    fclose(archivo);
-    return salida;
-}
-
-
-// Monitor
-typedef struct monitor_archivo_t{
-    char** lineas;
-    int* resultados;
-    int len;
-    pthread_mutex_t fileSem;
-    pthread_mutex_t resultSem;
-}monitor_archivo;
-
-monitor_archivo* monitor;
-
-void iniciarMonitorArchivo(monitor_archivo * monitorArchivo, char* nombreArchivo){
-    monitorArchivo = (monitor_archivo*) malloc(sizeof(monitor_archivo));
-    monitorArchivo->lineas = leerArchivo(nombreArchivo, &monitorArchivo->len);
-    monitorArchivo->resultados = (int*) malloc(sizeof(int) * monitorArchivo->len);
-    pthread_mutex_init(&monitorArchivo->fileSem, NULL);
-    pthread_mutex_init(&monitorArchivo->resultSem, NULL);
-}
-
-// Leer
-char* getLinea(monitor_archivo * monitorArchivo, int index){
-    pthread_mutex_lock(&monitorArchivo->fileSem);
-    char* salida = monitorArchivo->lineas[index];
-    pthread_mutex_unlock(&monitorArchivo->fileSem);
-    return salida;
-}
-
-// Escribir
-void setResultado(monitor_archivo * monitorArchivo, int index, int resultado){
-    pthread_mutex_lock(&monitorArchivo->resultSem);
-    monitorArchivo->resultados[index] = resultado;
-    pthread_mutex_unlock(&monitorArchivo->resultSem);
-    return;
-}
-
+// Variables globales
 int c; // Tamaño del chunk, cantidad de lineas a leer por chunk
 int n; // Cantidad de hebras a generar
 
-// Esta función mapea cada linea a cada hebra
-int threadByLine(int line){
-    return (line / c) % n;
-}
+char** entrada;
+pthread_mutex_t entrada_sem;
 
-void* hebra(void* id){
-    int idHebra = (int)(long) id;
-    // Recorrer todas las lineas
-    int n = monitor->len;
-    for(int i = 0; i < n; i++){
-        // Si la linea me corresponde
-        if(idHebra == threadByLine(i)){
-            int resultado;
-            char* linea = getLinea(monitor, i);
-            estado1(&resultado, linea,0);
-            setResultado(monitor, i, resultado);
-        }
-    }
-}
+int* salida;
+pthread_mutex_t salida_sem;
+
+int cantidadLineas;
+
 
 // Entradas: argc y argv
 // Salidas: int
@@ -154,26 +78,54 @@ int main(int argc, char *argv[]){
         exit(1);
     }
 
-    iniciarMonitorArchivo(monitor, i);
+    print("Archivo de entrada: %s", i);
+    print("Archivo de salida: %s", o);
+    print("Mostrar salida? %s", b ? "si":"no");
+    print("Tamaño del chunk: %d", c);
+    print("Cantidad de hebras: %d", n);
 
-    // Crear hebras
+    pthread_mutex_init(&entrada_sem, NULL);
+    pthread_mutex_init(&salida_sem, NULL);
+
+    // Leer archivo
+    entrada = leerArchivo(i, &cantidadLineas);
+    salida = (int*) malloc(sizeof(int) * cantidadLineas);
+
+
+    // Crear las hebras
     pthread_t* idsHebras = (pthread_t*) malloc(sizeof(pthread_t) * n);
+    int* codigosHebras = (int*) malloc(sizeof(int) * n);
     for(int i = 0; i < n; i++){
-        pthread_create(&idsHebras[i], NULL, hebra, (void*) &idsHebras[i]);
+        codigosHebras[i] = i;
+        pthread_create(&idsHebras[i], NULL, hebra, (void*) &codigosHebras[i]);
     }
 
-    // Esperar a que las hebras terminen
+    
+
+    // Esperar a que terminen
     for(int i = 0; i < n; i++){
         pthread_join(idsHebras[i], NULL);
     }
+    printf("Esperando a que las hebras terminen...\n");
+    
+    print("%s", entrada[0]);
+    
 
-    // Mostrar por pantalla
-    for(int i = 0; i < monitor->len; i++){
-        printf("%s  %s\n", monitor->lineas[i], monitor->resultados[i] ? "si" : "no");
+    print("\n\n\n\n\n\n");
+
+    // Mostrar resultados por pantalla
+    int si_count = 0;
+    int no_count = 0;
+    for(int i = 0; i < cantidadLineas; i++){
+        printf("%s  ", entrada[i]);
+        printf("%s\n", salida[i] ? "si" : "no");
+        salida[i] == 4 ? si_count++:no_count++;
     }
 
-    pthread_exit(0);
+    print("Total de expresiones que Si son regulares: %d", si_count);
+    print("Total de expresiones que No son regulares: %d", no_count);
 
+    printf("Fin del programa\n");
     return 0;
 }
 
@@ -249,3 +201,74 @@ void estado4(int* estadoActual, char* expresion, int indiceActual){
     estado4(estadoActual, expresion, indiceActual + 1);
 }
 // -----------------------------------------------------------------
+
+
+// Entradas: char* (nombre del archivo)
+// Salidas: int (cantidad de lineas del archivo)
+// Descripción: Obtiene la cantidad de lineas del nombre del archivo después del separador "_"
+// Ej: prueba_10.txt -> 10, prueba_100.txt = 100
+int getCantidadLineas(char* nombreArchivo){
+    char* posicionSeparador = strchr(nombreArchivo, '_') + 1;
+    return atoi(posicionSeparador);
+}
+
+// Entrada: char* (nombre del archivo a leer con extensión), int* (cantidad de lineas)
+// Salida: char** (Matriz de cadena de caracteres del contenido del archivo)
+// Descripción: Lee un archivo de principio a fin
+char** leerArchivo(char* nombreArchivo, int* cantidadLineas){
+    // En el enunciado se muestran 60 caracteres de prueba
+    int lenLinea = MAX_CHAR;
+
+    FILE* archivo = fopen(nombreArchivo, "r");
+    if(archivo == NULL){
+        printf("No se ha podido leer el archivo\n");
+        exit(1);
+    }
+
+    *cantidadLineas = getCantidadLineas(nombreArchivo);
+
+    // Leer
+    char** salida = (char**) malloc(sizeof(char*) * *cantidadLineas);
+    for(int i = 0; i < *cantidadLineas; i++){
+        salida[i] = (char*) malloc(sizeof(char) * lenLinea);
+        fscanf(archivo, "%s", salida[i]);
+    }
+
+    fclose(archivo);
+    return salida;
+}
+
+
+
+// Esta función mapea cada linea a cada hebra
+int threadByLine(int line){
+    return (line / c) % n;
+}
+
+void* hebra(void* arg){
+    int id = *(int*) arg;
+    print("Mi id es : %d", id);
+    int i;
+    for(i = 0; i < cantidadLineas; i++){
+        printf("%d     ", i);
+        // Si la linea me corresponde
+        if(id == threadByLine(i)){
+            // Leer
+            pthread_mutex_lock(&entrada_sem);
+            int resultado;
+            estado1(&resultado, entrada[i],0);
+            pthread_mutex_unlock(&entrada_sem);
+
+            // printf("%s  %s", entrada[i], resultado == 1 ? "si":"no");
+
+            // Escribir
+            pthread_mutex_lock(&salida_sem);
+            salida[i] = resultado;
+            pthread_mutex_unlock(&salida_sem);
+            // printf("       %d\n", i);
+        }
+    }
+
+    printf("       %d\n", i);
+    pthread_exit((void*) 1);
+}
