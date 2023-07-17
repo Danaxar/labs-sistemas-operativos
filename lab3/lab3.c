@@ -1,6 +1,4 @@
 // Daniel Catalán 20.675.871-6
-// Felipe Carrasco 20.285.756-6
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
@@ -25,14 +23,11 @@ void* hebra(void* arg);
 // Variables globales
 int c; // Tamaño del chunk, cantidad de lineas a leer por chunk
 int n; // Cantidad de hebras a generar
-
-char** entrada;
+char** entrada;  // Matriz de caracteres donde se guarda la información del archivo
 pthread_mutex_t entrada_sem;
-
-int* salida;
+int* salida;  // Array de enteros donde se almacena el resultado de la linea
 pthread_mutex_t salida_sem;
-
-int cantidadLineas;
+int cantidadLineas;  // Almacena la cantidad de lineas leidas
 
 
 // Entradas: argc y argv
@@ -78,11 +73,11 @@ int main(int argc, char *argv[]){
         exit(1);
     }
 
-    print("Archivo de entrada: %s", i);
-    print("Archivo de salida: %s", o);
-    print("Mostrar salida? %s", b ? "si":"no");
-    print("Tamaño del chunk: %d", c);
-    print("Cantidad de hebras: %d", n);
+    // print("Archivo de entrada: %s", i);
+    // print("Archivo de salida: %s", o);
+    // print("Mostrar salida? %s", b ? "si":"no");
+    // print("Tamaño del chunk: %d", c);
+    // print("Cantidad de hebras: %d", n);
 
     pthread_mutex_init(&entrada_sem, NULL);
     pthread_mutex_init(&salida_sem, NULL);
@@ -106,26 +101,31 @@ int main(int argc, char *argv[]){
     for(int i = 0; i < n; i++){
         pthread_join(idsHebras[i], NULL);
     }
-    printf("Esperando a que las hebras terminen...\n");
     
-    print("%s", entrada[0]);
-    
+    // Escribir el archivo de salida
+    FILE* archivo_salida = fopen(o, "w");
 
-    print("\n\n\n\n\n\n");
-
-    // Mostrar resultados por pantalla
+    // Contar resultados y mostrar resultados
     int si_count = 0;
     int no_count = 0;
     for(int i = 0; i < cantidadLineas; i++){
-        printf("%s  ", entrada[i]);
-        printf("%s\n", salida[i] ? "si" : "no");
+        b ? printf("%s %s\n", entrada[i], salida[i] == 4 ? "si" : "no") : 0;
+        fprintf(archivo_salida, "%s  %s\n", entrada[i], salida[i] == 4 ? "si" : "no");
         salida[i] == 4 ? si_count++:no_count++;
+        free(entrada[i]);
     }
+    fprintf(archivo_salida, "\n\n");
 
-    print("Total de expresiones que Si son regulares: %d", si_count);
-    print("Total de expresiones que No son regulares: %d", no_count);
+    fprintf(archivo_salida, "Total de expresiones que Si son regulares: %d\n", si_count);
+    fprintf(archivo_salida, "Total de expresiones que No son regulares: %d\n", no_count);
 
-    printf("Fin del programa\n");
+    if(b){
+        print("Total de expresiones que Si son regulares: %d", si_count);
+        print("Total de expresiones que No son regulares: %d", no_count);
+    }
+    fclose(archivo_salida);
+    free(entrada);
+    free(salida);
     return 0;
 }
 
@@ -247,10 +247,8 @@ int threadByLine(int line){
 
 void* hebra(void* arg){
     int id = *(int*) arg;
-    print("Mi id es : %d", id);
     int i;
     for(i = 0; i < cantidadLineas; i++){
-        printf("%d     ", i);
         // Si la linea me corresponde
         if(id == threadByLine(i)){
             // Leer
@@ -259,16 +257,12 @@ void* hebra(void* arg){
             estado1(&resultado, entrada[i],0);
             pthread_mutex_unlock(&entrada_sem);
 
-            // printf("%s  %s", entrada[i], resultado == 1 ? "si":"no");
-
             // Escribir
             pthread_mutex_lock(&salida_sem);
             salida[i] = resultado;
             pthread_mutex_unlock(&salida_sem);
-            // printf("       %d\n", i);
         }
     }
 
-    printf("       %d\n", i);
     pthread_exit((void*) 1);
 }
