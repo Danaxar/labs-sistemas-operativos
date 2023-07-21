@@ -5,20 +5,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include "funciones.h"
 
 #define print(...) printf(__VA_ARGS__); printf("\n")
 #define MAX_CHAR 60
-
-// Cabeceras
-void estado1(int* estadoActual, char* expresion, int indiceActual);
-void estado2(int* estadoActual, char* expresion, int indiceActual);
-void estado3(int* estadoActual, char* expresion, int indiceActual);
-void estado4(int* estadoActual, char* expresion, int indiceActual);
-int getCantidadLineas(char* nombreArchivo);
-char** leerArchivo(char* nombreArchivo, int* cantidadLineas);
-int threadByLine(int line);
-void* hebra(void* arg);
-
 
 // Variables globales
 int c; // Tamaño del chunk, cantidad de lineas a leer por chunk
@@ -28,6 +18,30 @@ pthread_mutex_t entrada_sem;
 int* salida;  // Array de enteros donde se almacena el resultado de la linea
 pthread_mutex_t salida_sem;
 int cantidadLineas;  // Almacena la cantidad de lineas leidas
+
+// Entradas: void* (id de la hebra (int))
+// Salidas: void*
+// Descripción: Lee el archivo y escribe el resultado 
+void* hebra(void* arg){
+    int id = *(int*) arg;
+    int i;
+    for(i = 0; i < cantidadLineas; i++){
+        // Si la linea me corresponde
+        if(id == ((i / c) % n)){
+            // Leer
+            pthread_mutex_lock(&entrada_sem);
+            int resultado;
+            estado1(&resultado, entrada[i],0);
+            pthread_mutex_unlock(&entrada_sem);
+
+            // Escribir
+            pthread_mutex_lock(&salida_sem);
+            salida[i] = resultado;
+            pthread_mutex_unlock(&salida_sem);
+        }
+    }
+    pthread_exit((void*) 1);
+}
 
 
 // Entradas: argc y argv
@@ -127,142 +141,4 @@ int main(int argc, char *argv[]){
     free(entrada);
     free(salida);
     return 0;
-}
-
-
-
-
-// --------------------- ESTADOS ------------------------ //
-// Entradas: int* (estado actual), char* (expresión a evaluar), int (numero de caracter a analizar)
-// Salidas: ninguna
-// Descripción: Representa el estado 1 del autómata finito
-void estado1(int* estadoActual, char* expresion, int indiceActual){
-    if(indiceActual == MAX_CHAR)
-        return;
-
-    *estadoActual = 1;
-
-    if(expresion[indiceActual] == 'A' || expresion[indiceActual] == 'C' || expresion[indiceActual] == 'T')
-        estado1(estadoActual, expresion, indiceActual + 1);
-    
-    else if(expresion[indiceActual] == 'G') 
-        estado2(estadoActual, expresion, indiceActual + 1);
-}
-
-// Entradas: int* (estado actual), char* (expresión a evaluar), int (numero de caracter a analizar)
-// Salidas: ninguna
-// Descripción: Representa el estado 2 del autómata finito
-void estado2(int* estadoActual, char* expresion, int indiceActual){
-    if(indiceActual == MAX_CHAR)
-        return;
-
-    *estadoActual = 2;
-    
-    if(expresion[indiceActual] == 'A' || expresion[indiceActual] == 'C')
-        estado1(estadoActual, expresion, indiceActual + 1);
-    
-    else if(expresion[indiceActual] == 'G')
-        estado2(estadoActual, expresion, indiceActual + 1);
-    
-    else if(expresion[indiceActual] == 'T')
-        estado3(estadoActual, expresion, indiceActual + 1);
-    
-}
-
-// Entradas: int* (estado actual), char* (expresión a evaluar), int (numero de caracter a analizar)
-// Salidas: ninguna
-// Descripción: Representa el estado 3 del autómata finito
-void estado3(int* estadoActual, char* expresion, int indiceActual){
-    if(indiceActual == MAX_CHAR) 
-        return;
-
-    *estadoActual = 3;
-    if(expresion[indiceActual] == 'A')
-        estado1(estadoActual, expresion, indiceActual + 1);
-    
-    else if(expresion[indiceActual] == 'G')
-        estado2(estadoActual, expresion, indiceActual + 1);
-    
-    else if(expresion[indiceActual] == 'T')
-        estado3(estadoActual, expresion, indiceActual + 1);
-    
-    else if(expresion[indiceActual] == 'C')
-        estado4(estadoActual, expresion, indiceActual + 1);
-}
-
-// Entradas: int* (estado actual), char* (expresión a evaluar), int (numero de caracter a analizar)
-// Salidas: ninguna
-// Descripción: Representa el estado 4 del autómata finito
-void estado4(int* estadoActual, char* expresion, int indiceActual){
-    if(indiceActual == 60)
-        return;
-    
-    *estadoActual = 4;
-    estado4(estadoActual, expresion, indiceActual + 1);
-}
-// -----------------------------------------------------------------
-
-
-// Entradas: char* (nombre del archivo)
-// Salidas: int (cantidad de lineas del archivo)
-// Descripción: Obtiene la cantidad de lineas del nombre del archivo después del separador "_"
-// Ej: prueba_10.txt -> 10, prueba_100.txt = 100
-int getCantidadLineas(char* nombreArchivo){
-    char* posicionSeparador = strchr(nombreArchivo, '_') + 1;
-    return atoi(posicionSeparador);
-}
-
-// Entrada: char* (nombre del archivo a leer con extensión), int* (cantidad de lineas)
-// Salida: char** (Matriz de cadena de caracteres del contenido del archivo)
-// Descripción: Lee un archivo de principio a fin
-char** leerArchivo(char* nombreArchivo, int* cantidadLineas){
-    // En el enunciado se muestran 60 caracteres de prueba
-    int lenLinea = MAX_CHAR;
-
-    FILE* archivo = fopen(nombreArchivo, "r");
-    if(archivo == NULL){
-        printf("No se ha podido leer el archivo\n");
-        exit(1);
-    }
-
-    *cantidadLineas = getCantidadLineas(nombreArchivo);
-
-    // Leer
-    char** salida = (char**) malloc(sizeof(char*) * *cantidadLineas);
-    for(int i = 0; i < *cantidadLineas; i++){
-        salida[i] = (char*) malloc(sizeof(char) * lenLinea);
-        fscanf(archivo, "%s", salida[i]);
-    }
-
-    fclose(archivo);
-    return salida;
-}
-
-
-
-// Esta función mapea cada linea a cada hebra
-int threadByLine(int line){
-    return (line / c) % n;
-}
-
-void* hebra(void* arg){
-    int id = *(int*) arg;
-    int i;
-    for(i = 0; i < cantidadLineas; i++){
-        // Si la linea me corresponde
-        if(id == threadByLine(i)){
-            // Leer
-            pthread_mutex_lock(&entrada_sem);
-            int resultado;
-            estado1(&resultado, entrada[i],0);
-            pthread_mutex_unlock(&entrada_sem);
-
-            // Escribir
-            pthread_mutex_lock(&salida_sem);
-            salida[i] = resultado;
-            pthread_mutex_unlock(&salida_sem);
-        }
-    }
-
-    pthread_exit((void*) 1);
 }
